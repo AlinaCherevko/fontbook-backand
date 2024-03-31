@@ -1,4 +1,9 @@
-import { isUserExist, createUser } from "../services/userServices.js";
+import {
+  isUserExist,
+  createUser,
+  logoutUser,
+  updateUserWithToken,
+} from "../services/userServices.js";
 import HttpError from "../helpers/HttpError.js";
 
 export const registerUser = async (req, res, next) => {
@@ -29,5 +34,22 @@ export const loginUser = async (req, res, next) => {
     if (!isPasswordCorrect) {
       throw HttpError(401, "Wrong email or password");
     }
-  } catch (error) {}
+    const { name, token } = await updateUserWithToken(user._id);
+    const response = { user: { email, name }, token };
+
+    res.json(response);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const signout = async (req, res) => {
+  await logoutUser(req.user._id);
+  res.sendStatus(204);
+};
+
+export const currentUser = (req, res) => {
+  const { name, email } = req.user;
+
+  res.json({ name, email });
 };
