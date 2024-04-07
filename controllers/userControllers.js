@@ -66,26 +66,40 @@ export const currentUser = (req, res) => {
   res.json({ name, email, avatarURL });
 };
 
-export const updateAvatar = async (req, res) => {
-  const { _id, email } = req.user;
+export const updateAvatar = async (req, res, next) => {
+  try {
+    const { _id, email } = req.user;
 
-  if (!req.file) {
-    throw HttpError(400, "No attached file");
+    if (!req.file) {
+      throw HttpError(400, "No attached file");
+    }
+
+    const { path: oldPath, filename } = req.file;
+    const { height, width } = AVATAR_IMG_SIZES.small;
+    const newFileName = `${email}-${width}x${height}-${filename}`;
+    const newPath = path.join(avatarsPath, newFileName);
+
+    const avatarImg = await Jimp.read(oldPath);
+
+    await avatarImg.resize(width, height).write(newPath);
+
+    await fs.unlink(oldPath);
+
+    const avatarURL = path.join("avatars", newFileName);
+    await updateUser({ _id }, { avatarURL });
+
+    res.json({ avatarURL });
+  } catch (error) {
+    next(error);
   }
+};
 
-  const { path: oldPath, filename } = req.file;
-  const { height, width } = AVATAR_IMG_SIZES.small;
-  const newFileName = `${email}-${width}x${height}-${filename}`;
-  const newPath = path.join(avatarsPath, newFileName);
-
-  const avatarImg = await Jimp.read(oldPath);
-
-  await avatarImg.resize(width, height).write(newPath);
-
-  await fs.unlink(oldPath);
-
-  const avatarURL = path.join("avatars", newFileName);
-  await updateUser({ _id }, { avatarURL });
-
-  res.json({ avatarURL });
+export const updateName = async (req, res, next) => {
+  try {
+    const { _id } = req.user;
+    const { name } = await updateUser({ _id }, { name: req.body.name });
+    res.json({ name });
+  } catch (error) {
+    next(error);
+  }
 };

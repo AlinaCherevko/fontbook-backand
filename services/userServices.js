@@ -35,4 +35,4 @@ export const logoutUser = async (id) =>
   await User.findByIdAndUpdate(id, { token: "" });
 
 export const updateUser = (filter, data) =>
-  User.findByIdAndUpdate(filter, data);
+  User.findByIdAndUpdate(filter, data, { new: true });
